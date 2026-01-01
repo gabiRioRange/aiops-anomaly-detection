@@ -60,7 +60,7 @@ Variáveis importantes:
 
 ```bash
 # Clone o repositório
-git clone <seu-repo>
+git clone https://github.com/gabiRioRange/aiops-anomaly-detection
 cd aiops-anomaly-detection
 
 # Build e execute com Docker
@@ -73,7 +73,7 @@ docker-compose up --build
 
 ```bash
 # Clone o repositório
-git clone <seu-repo>
+git clone https://github.com/gabiRioRange/aiops-anomaly-detection
 cd aiops-anomaly-detection
 
 # Instale com pip
@@ -294,13 +294,6 @@ projeto-aiops/
 └── requirements.txt      # Dependências
 ```
 
-## 🤝 Contribuição
-
-1. Fork o projeto
-2. Crie uma branch (`git checkout -b feature/nova-feature`)
-3. Commit suas mudanças (`git commit -am 'Adiciona nova feature'`)
-4. Push para a branch (`git push origin feature/nova-feature`)
-5. Abra um Pull Request
 
 ### Adicionando Novos Detectores
 
