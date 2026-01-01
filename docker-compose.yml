@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  aiops-api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - PYTHONPATH=/app
+    restart: unless-stopped
+
+  # Banco de dados opcional (se quiser usar PostgreSQL)
+  # db:
+  #   image: postgres:15
+  #   environment:
+  #     POSTGRES_DB: aiops
+  #     POSTGRES_USER: aiops
+  #     POSTGRES_PASSWORD: aiops
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+
+volumes:
+  postgres_data:

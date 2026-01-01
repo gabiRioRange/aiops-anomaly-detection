@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 AIOps Anomaly Detection Dashboard</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .status {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .status.online {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.offline {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 1px solid #e9ecef;
+        }
+
+        .form-section h2 {
+            color: #495057;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9em;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: #6c757d;
+        }
+
+        button.secondary:hover {
+            background: #5a6268;
+            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 15px;
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border: 2px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .error {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .result h3 {
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .result p {
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .metric {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .metric-label {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 500px;
+            margin-top: 30px;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .sample-data {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .sample-data summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .sample-data pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 AIOps Anomaly Detection</h1>
+        <p class="subtitle">Dashboard Interativo para Detecção de Anomalias em Tempo Real</p>
+
+        <div id="apiStatus" class="status online">
+            ✅ API Online - Sistema Funcionando
+        </div>
+
+        <div class="form-section">
+            <h2>🔍 Configuração da Detecção</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="resourceId">ID do Recurso:</label>
+                    <input type="text" id="resourceId" value="web-server-01" placeholder="ex: web-server-01">
+                </div>
+
+                <div class="form-group">
+                    <label for="metricName">Tipo de Métrica:</label>
+                    <select id="metricName">
+                        <option value="cpu">CPU (%)</option>
+                        <option value="memory">Memória (%)</option>
+                        <option value="requests">Requests/seg</option>
+                        <option value="error_rate">Taxa de Erro (%)</option>
+                        <option value="latency">Latência (ms)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="method">Método de Detecção:</label>
+                    <select id="method">
+                        <option value="isolation-forest">🌲 Isolation Forest (Recomendado)</option>
+                        <option value="z-score">📊 Z-Score (Rápido)</option>
+                        <option value="lof">🎯 Local Outlier Factor</option>
+                        <option value="prophet">🔮 Prophet (Séries Temporais)</option>
+                        <option value="moving-average">📈 Moving Average</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="sensitivity">Sensibilidade:</label>
+                    <select id="sensitivity">
+                        <option value="low">🟢 Baixa (Menos falsos positivos)</option>
+                        <option value="medium" selected>🟡 Média (Equilibrado)</option>
+                        <option value="high">🔴 Alta (Mais sensível)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="data">Dados da Série Temporal (JSON):</label>
+                <textarea id="data" placeholder='[
+    {"timestamp": "2024-01-01T00:00:00", "value": 10.1},
+    {"timestamp": "2024-01-01T00:01:00", "value": 10.5},
+    {"timestamp": "2024-01-01T00:02:00", "value": 45.2},
+    ...
+]'>[
+    {"timestamp": "2024-01-01T00:00:00", "value": 10.1},
+    {"timestamp": "2024-01-01T00:01:00", "value": 10.5},
+    {"timestamp": "2024-01-01T00:02:00", "value": 11.2},
+    {"timestamp": "2024-01-01T00:03:00", "value": 10.8},
+    {"timestamp": "2024-01-01T00:04:00", "value": 10.3},
+    {"timestamp": "2024-01-01T00:05:00", "value": 10.7},
+    {"timestamp": "2024-01-01T00:06:00", "value": 45.2},
+    {"timestamp": "2024-01-01T00:07:00", "value": 10.4},
+    {"timestamp": "2024-01-01T00:08:00", "value": 10.6},
+    {"timestamp": "2024-01-01T00:09:00", "value": 10.9}
+]</textarea>
+            </div>
+
+            <details class="sample-data">
+                <summary>💡 Dados de Exemplo</summary>
+                <p>Clique nos botões abaixo para carregar dados de exemplo:</p>
+                <div class="button-group">
+                    <button onclick="loadSampleData('cpu')">CPU Normal</button>
+                    <button onclick="loadSampleData('cpu_anomaly')">CPU com Anomalia</button>
+                    <button onclick="loadSampleData('requests')">Requests</button>
+                    <button onclick="loadSampleData('latency')">Latência</button>
+                </div>
+            </details>
+
+            <div class="button-group">
+                <button onclick="detectAnomalies()">
+                    <span id="loading" style="display: none;"><span class="loading"></span></span>
+                    🚀 Detectar Anomalias
+                </button>
+                <button class="secondary" onclick="clearResults()">🗑️ Limpar</button>
+            </div>
+        </div>
+
+        <div id="result" class="result"></div>
+
+        <div class="chart-container">
+            <canvas id="anomalyChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let anomalyChart = null;
+        const sampleData = {
+            cpu: [
+                {"timestamp": "2024-01-01T00:00:00", "value": 15.2},
+                {"timestamp": "2024-01-01T00:01:00", "value": 16.1},
+                {"timestamp": "2024-01-01T00:02:00", "value": 14.8},
+                {"timestamp": "2024-01-01T00:03:00", "value": 15.5},
+                {"timestamp": "2024-01-01T00:04:00", "value": 16.2},
+                {"timestamp": "2024-01-01T00:05:00", "value": 15.9},
+                {"timestamp": "2024-01-01T00:06:00", "value": 15.3},
+                {"timestamp": "2024-01-01T00:07:00", "value": 16.0},
+                {"timestamp": "2024-01-01T00:08:00", "value": 15.7},
+                {"timestamp": "2024-01-01T00:09:00", "value": 15.4}
+            ],
+            cpu_anomaly: [
+                {"timestamp": "2024-01-01T00:00:00", "value": 15.2},
+                {"timestamp": "2024-01-01T00:01:00", "value": 16.1},
+                {"timestamp": "2024-01-01T00:02:00", "value": 14.8},
+                {"timestamp": "2024-01-01T00:03:00", "value": 15.5},
+                {"timestamp": "2024-01-01T00:04:00", "value": 16.2},
+                {"timestamp": "2024-01-01T00:05:00", "value": 15.9},
+                {"timestamp": "2024-01-01T00:06:00", "value": 85.3},
+                {"timestamp": "2024-01-01T00:07:00", "value": 16.0},
+                {"timestamp": "2024-01-01T00:08:00", "value": 15.7},
+                {"timestamp": "2024-01-01T00:09:00", "value": 15.4}
+            ],
+            requests: [
+                {"timestamp": "2024-01-01T00:00:00", "value": 120},
+                {"timestamp": "2024-01-01T00:01:00", "value": 135},
+                {"timestamp": "2024-01-01T00:02:00", "value": 128},
+                {"timestamp": "2024-01-01T00:03:00", "value": 142},
+                {"timestamp": "2024-01-01T00:04:00", "value": 138},
+                {"timestamp": "2024-01-01T00:05:00", "value": 125},
+                {"timestamp": "2024-01-01T00:06:00", "value": 380},
+                {"timestamp": "2024-01-01T00:07:00", "value": 133},
+                {"timestamp": "2024-01-01T00:08:00", "value": 129},
+                {"timestamp": "2024-01-01T00:09:00", "value": 141}
+            ],
+            latency: [
+                {"timestamp": "2024-01-01T00:00:00", "value": 45},
+                {"timestamp": "2024-01-01T00:01:00", "value": 42},
+                {"timestamp": "2024-01-01T00:02:00", "value": 48},
+                {"timestamp": "2024-01-01T00:03:00", "value": 44},
+                {"timestamp": "2024-01-01T00:04:00", "value": 46},
+                {"timestamp": "2024-01-01T00:05:00", "value": 43},
+                {"timestamp": "2024-01-01T00:06:00", "value": 125},
+                {"timestamp": "2024-01-01T00:07:00", "value": 47},
+                {"timestamp": "2024-01-01T00:08:00", "value": 45},
+                {"timestamp": "2024-01-01T00:09:00", "value": 44}
+            ]
+        };
+
+        function loadSampleData(type) {
+            document.getElementById('data').value = JSON.stringify(sampleData[type], null, 4);
+            document.getElementById('metricName').value = type === 'cpu' || type === 'cpu_anomaly' ? 'cpu' :
+                                                         type === 'requests' ? 'requests' :
+                                                         type === 'latency' ? 'latency' : 'cpu';
+        }
+
+        async function detectAnomalies() {
+            const loading = document.getElementById('loading');
+            const button = loading.parentElement;
+            const originalText = button.innerHTML;
+
+            loading.style.display = 'inline-block';
+            button.disabled = true;
+            button.innerHTML = loading.outerHTML + 'Processando...';
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'none';
+
+            try {
+                const data = JSON.parse(document.getElementById('data').value);
+                const payload = {
+                    series: [{
+                        resource_id: document.getElementById('resourceId').value,
+                        metric_name: document.getElementById('metricName').value,
+                        data: data
+                    }],
+                    method: document.getElementById('method').value,
+                    sensitivity: document.getElementById('sensitivity').value
+                };
+
+                const response = await fetch('/api/v1/detect', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    displayResult(result);
+                } else {
+                    throw new Error(result.detail || 'Erro na detecção');
+                }
+
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h3>❌ Erro na Detecção</h3><p>${error.message}</p>`;
+                resultDiv.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+
+        function displayResult(result) {
+            const resultDiv = document.getElementById('result');
+            const series = result.results[0];
+
+            resultDiv.className = 'result success';
+            resultDiv.innerHTML = `
+                <h3>✅ Detecção Concluída</h3>
+                <div class="metrics-grid">
+                    <div class="metric">
+                        <div class="metric-value">${series.total_points}</div>
+                        <div class="metric-label">Pontos Analisados</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${series.anomaly_count}</div>
+                        <div class="metric-label">Anomalias Detectadas</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${series.anomaly_percentage.toFixed(1)}%</div>
+                        <div class="metric-label">Porcentagem</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${series.detection_time_ms.toFixed(0)}ms</div>
+                        <div class="metric-label">Tempo de Processamento</div>
+                    </div>
+                </div>
+                <p><strong>Método:</strong> ${series.method_used}</p>
+                <p><strong>Recurso:</strong> ${series.resource_id} (${series.metric_name})</p>
+            `;
+            resultDiv.style.display = 'block';
+
+            // Atualizar gráfico
+            updateChart(series);
+        }
+
+        function updateChart(series) {
+            const ctx = document.getElementById('anomalyChart').getContext('2d');
+
+            if (anomalyChart) {
+                anomalyChart.destroy();
+            }
+
+            const data = series.anomalies;
+            const values = data.map(d => d.value);
+            const isAnomaly = data.map(d => d.is_anomaly);
+            const labels = data.map((_, i) => `P${i + 1}`);
+
+            anomalyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Valor da Métrica',
+                        data: values,
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        pointBackgroundColor: isAnomaly.map(a => a ? '#dc3545' : '#28a745'),
+                        pointBorderColor: isAnomaly.map(a => a ? '#dc3545' : '#28a745'),
+                        pointRadius: isAnomaly.map(a => a ? 8 : 4),
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Análise de Anomalias - ${series.resource_id} (${series.metric_name})`,
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            display: true,
+                            labels: {
+                                usePointStyle: true,
+                                generateLabels: function(chart) {
+                                    return [{
+                                        text: 'Normal',
+                                        fillStyle: '#28a745',
+                                        strokeStyle: '#28a745',
+                                        pointStyle: 'circle'
+                                    }, {
+                                        text: 'Anomalia',
+                                        fillStyle: '#dc3545',
+                                        strokeStyle: '#dc3545',
+                                        pointStyle: 'circle'
+                                    }];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Valor'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Pontos Temporais'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        function clearResults() {
+            document.getElementById('result').style.display = 'none';
+            if (anomalyChart) {
+                anomalyChart.destroy();
+                anomalyChart = null;
+            }
+        }
+
+        // Verificar status da API
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch('/health');
+                if (response.ok) {
+                    document.getElementById('apiStatus').className = 'status online';
+                    document.getElementById('apiStatus').innerHTML = '✅ API Online - Sistema Funcionando';
+                } else {
+                    throw new Error();
+                }
+            } catch (error) {
+                document.getElementById('apiStatus').className = 'status offline';
+                document.getElementById('apiStatus').innerHTML = '❌ API Offline - Verifique se o servidor está rodando';
+            }
+        }
+
+        // Verificar status ao carregar
+        window.onload = checkAPIStatus;
+    </script>
+</body>
+</html>
